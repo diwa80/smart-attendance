@@ -40,5 +40,5 @@ The application runs on port 5000 via the "Start application" workflow which exe
 - Excel export for reports
 
 ## Recent Changes
-- Initial setup for Replit environment (December 2025)
+- UI updated to match OrangeHRM design language (December 2025)
 - Configured host to 0.0.0.0:5000 for Replit compatibility
