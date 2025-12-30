@@ -8,10 +8,9 @@
 </head>
 <body>
     <div class="navbar">
-        <div class="nav-container">
+        <div class="nav-container" style="display: contents;">
             <div class="nav-brand">
-                <h2>Attendance System</h2>
-                <span class="role-badge">Employee</span>
+                <h2>BlueSky HRM</h2>
             </div>
             <div class="nav-menu">
                 <a href="{{ url_for('employee_dashboard') }}" class="nav-link">Dashboard</a>
@@ -23,37 +22,39 @@
 
     <div class="main-container">
         <div class="page-header">
-            <h1>My Attendance Records</h1>
-            <p class="text-muted">View your attendance history</p>
+            <h1>My Attendance History</h1>
         </div>
 
         <div class="card">
-            <div class="card-body">
-                <table class="table">
-                    <thead>
+            <div class="card-header">
+                <h3>All Records</h3>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <table class="table" style="margin-bottom: 0;">
+                    <thead style="background: #f8f9fa;">
                         <tr>
-                            <th>Date</th>
-                            <th>Check-In</th>
-                            <th>Check-Out</th>
+                            <th style="padding: 16px 20px;">Date</th>
+                            <th>Punch In</th>
+                            <th>Punch Out</th>
                             <th>Status</th>
-                            <th>Duration</th>
+                            <th style="text-align: right; padding-right: 20px;">Duration</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for record in records.items %}
                         <tr>
-                            <td>{{ record.date.strftime('%Y-%m-%d') }}</td>
+                            <td style="padding: 16px 20px; font-weight: 600;">{{ record.date.strftime('%Y-%m-%d (%a)') }}</td>
                             <td>{{ record.check_in.strftime('%H:%M:%S') if record.check_in else '-' }}</td>
                             <td>{{ record.check_out.strftime('%H:%M:%S') if record.check_out else '-' }}</td>
                             <td>
-                                <span class="status-badge status-{{ record.status.lower() }}">
+                                <span style="padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; background: {% if record.status == 'present' %}#e6fffa; color: #2c7a7b;{% elif record.status == 'absent' %}#fff5f5; color: #c53030;{% else %}#ebf8ff; color: #2b6cb0;{% endif %}">
                                     {{ record.status.capitalize() }}
                                 </span>
                             </td>
-                            <td>
+                            <td style="text-align: right; padding-right: 20px; font-family: monospace;">
                                 {% if record.check_in and record.check_out %}
                                     {% set duration = record.check_out - record.check_in %}
-                                    {{ (duration.total_seconds() / 3600) | round(2) }} hrs
+                                    {{ (duration.total_seconds() / 3600) | round(2) }}h
                                 {% else %}
                                     -
                                 {% endif %}
@@ -62,35 +63,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
-
-                {% if not records.items %}
-                <div class="empty-state">
-                    <p>No attendance records found</p>
-                </div>
-                {% endif %}
             </div>
-
-            {% if records.pages > 1 %}
-            <div class="pagination">
-                {% if records.has_prev %}
-                    <a href="{{ url_for('my_records', page=records.prev_num) }}" class="btn btn-outline">Previous</a>
-                {% endif %}
-
-                {% for page_num in records.iter_pages() %}
-                    {% if page_num %}
-                        {% if page_num == records.page %}
-                            <span class="page-active">{{ page_num }}</span>
-                        {% else %}
-                            <a href="{{ url_for('my_records', page=page_num) }}" class="btn btn-outline">{{ page_num }}</a>
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-
-                {% if records.has_next %}
-                    <a href="{{ url_for('my_records', page=records.next_num) }}" class="btn btn-outline">Next</a>
-                {% endif %}
-            </div>
-            {% endif %}
         </div>
     </div>
 </body>

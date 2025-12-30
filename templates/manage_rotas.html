@@ -8,14 +8,13 @@
 </head>
 <body>
     <div class="navbar">
-        <div class="nav-container">
+        <div class="nav-container" style="display: contents;">
             <div class="nav-brand">
-                <h2>Attendance System</h2>
-                <span class="role-badge role-admin">Admin</span>
+                <h2>BlueSky HRM</h2>
             </div>
             <div class="nav-menu">
                 <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
-                <a href="{{ url_for('manage_employees') }}" class="nav-link">Employees</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link">PIM</a>
                 <a href="{{ url_for('manage_rotas') }}" class="nav-link active">Rotas</a>
                 <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
                 <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
@@ -26,48 +25,43 @@
 
     <div class="main-container">
         <div class="page-header">
-            <h1>Manage Employee Rotas</h1>
-            <p class="text-muted">Assign and manage employee work schedules</p>
+            <h1>Shift Management</h1>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <h3>Employees</h3>
+                <h3>Employee Schedules</h3>
             </div>
-            <div class="card-body">
-                <table class="table">
-                    <thead>
+            <div class="card-body" style="padding: 0;">
+                <table class="table" style="margin-bottom: 0;">
+                    <thead style="background: #f8f9fa;">
                         <tr>
-                            <th>Employee Name</th>
+                            <th style="padding: 16px 20px;">Employee</th>
                             <th>Username</th>
                             <th>Department</th>
-                            <th>Assigned Shifts</th>
-                            <th>Actions</th>
+                            <th>Active Shifts</th>
+                            <th style="text-align: right; padding-right: 20px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for employee in employees %}
                         <tr>
-                            <td>{{ employee.full_name }}</td>
+                            <td style="padding: 16px 20px; font-weight: 600;">{{ employee.full_name }}</td>
                             <td>{{ employee.username }}</td>
                             <td>{{ employee.department or '-' }}</td>
                             <td>
-                                {% set rota_count = employee.rotas|selectattr('is_active')|list|length %}
-                                {{ rota_count }} day(s)
+                                <span style="font-weight: 700; color: var(--secondary-blue);">
+                                    {% set rota_count = employee.rotas|selectattr('is_active')|list|length %}
+                                    {{ rota_count }} days
+                                </span>
                             </td>
-                            <td>
-                                <a href="{{ url_for('employee_rotas', employee_id=employee.id) }}" class="btn btn-sm btn-primary">Manage Schedule</a>
+                            <td style="text-align: right; padding-right: 20px;">
+                                <a href="{{ url_for('employee_rotas', employee_id=employee.id) }}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">Edit Schedule</a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-
-                {% if not employees %}
-                <div class="empty-state">
-                    <p>No employees found. <a href="{{ url_for('add_employee') }}">Add one now</a></p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>

@@ -8,15 +8,13 @@
 </head>
 <body>
     <div class="navbar">
-        <div class="nav-container">
+        <div class="nav-container" style="display: contents;">
             <div class="nav-brand">
-                <h2>Attendance System</h2>
-                <span class="role-badge role-admin">Admin</span>
+                <h2>BlueSky HRM</h2>
             </div>
             <div class="nav-menu">
                 <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
-                <a href="{{ url_for('manage_employees') }}" class="nav-link active">Employees</a>
-                <a href="{{ url_for('manage_rotas') }}" class="nav-link">Rotas</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link active">PIM</a>
                 <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
                 <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
                 <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
@@ -25,106 +23,93 @@
     </div>
 
     <div class="main-container">
-        <div class="page-header">
-            <a href="{{ url_for('manage_employees') }}" class="btn-back">← Back</a>
+        <div class="page-header" style="display: flex; align-items: center; gap: 20px;">
+            <a href="{{ url_for('manage_employees') }}" style="text-decoration: none; font-size: 24px; color: var(--primary-blue);">←</a>
             <h1>{{ employee.full_name }}</h1>
-            <p class="text-muted">Attendance records for {{ employee.username }}</p>
         </div>
 
         <div class="dashboard-grid">
             <div class="card">
                 <div class="card-header">
-                    <h3>Employee Details</h3>
+                    <h3>Personal Details</h3>
                 </div>
                 <div class="card-body">
-                    <div class="info-item">
-                        <span class="label">Full Name:</span>
-                        <span class="value">{{ employee.full_name }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Username:</span>
-                        <span class="value">{{ employee.username }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Email:</span>
-                        <span class="value">{{ employee.email }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Department:</span>
-                        <span class="value">{{ employee.department or '-' }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Status:</span>
-                        <span class="value">
-                            <span class="status-badge {% if employee.is_active %}status-active{% else %}status-inactive{% endif %}">
-                                {% if employee.is_active %}Active{% else %}Inactive{% endif %}
-                            </span>
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Joined Date:</span>
-                        <span class="value">{{ employee.created_at.strftime('%Y-%m-%d') }}</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div style="font-size: 12px; color: #888;">Username</div>
+                            <div style="font-weight: 600;">{{ employee.username }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #888;">Email</div>
+                            <div style="font-weight: 600;">{{ employee.email }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #888;">Department</div>
+                            <div style="font-weight: 600;">{{ employee.department or '-' }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #888;">Status</div>
+                            <div style="font-weight: 600;">
+                                <span style="padding: 2px 10px; border-radius: 10px; font-size: 11px; background: {% if employee.is_active %}#e6fffa; color: #2c7a7b;{% else %}#fff5f5; color: #c53030;{% endif %}">
+                                    {% if employee.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <h3>Filter Records</h3>
+                    <h3>Filter History</h3>
                 </div>
                 <div class="card-body">
-                    <form method="GET" class="form-inline">
-                        <div class="form-group">
-                            <label for="month">Month:</label>
-                            <select id="month" name="month" onchange="this.form.submit()">
-                                {% for m in range(1, 13) %}
-                                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m-1] }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="year">Year:</label>
-                            <select id="year" name="year" onchange="this.form.submit()">
-                                {% for y in range(2023, 2026) %}
-                                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                    <form method="GET" style="display: flex; gap: 10px;">
+                        <select name="month" onchange="this.form.submit()" style="flex: 1; padding: 10px; border-radius: 8px; border: 1.5px solid var(--border-color);">
+                            {% for m in range(1, 13) %}
+                                <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m-1] }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="year" onchange="this.form.submit()" style="flex: 1; padding: 10px; border-radius: 8px; border: 1.5px solid var(--border-color);">
+                            {% for y in range(2023, 2027) %}
+                                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" style="margin-top: 24px;">
             <div class="card-header">
-                <h3>Attendance Records - {{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month-1] }} {{ year }}</h3>
+                <h3>Attendance History - {{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month-1] }} {{ year }}</h3>
             </div>
-            <div class="card-body">
-                <table class="table">
-                    <thead>
+            <div class="card-body" style="padding: 0;">
+                <table class="table" style="margin-bottom: 0;">
+                    <thead style="background: #f8f9fa;">
                         <tr>
-                            <th>Date</th>
-                            <th>Check-In</th>
-                            <th>Check-Out</th>
+                            <th style="padding: 16px 20px;">Date</th>
+                            <th>Punch In</th>
+                            <th>Punch Out</th>
                             <th>Status</th>
-                            <th>Duration</th>
+                            <th style="text-align: right; padding-right: 20px;">Work Hours</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for record in records %}
                         <tr>
-                            <td>{{ record.date.strftime('%Y-%m-%d (%A)') }}</td>
+                            <td style="padding: 16px 20px; font-weight: 600;">{{ record.date.strftime('%Y-%m-%d (%a)') }}</td>
                             <td>{{ record.check_in.strftime('%H:%M:%S') if record.check_in else '-' }}</td>
                             <td>{{ record.check_out.strftime('%H:%M:%S') if record.check_out else '-' }}</td>
                             <td>
-                                <span class="status-badge status-{{ record.status.lower() }}">
+                                <span style="padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; background: {% if record.status == 'present' %}#e6fffa; color: #2c7a7b;{% elif record.status == 'absent' %}#fff5f5; color: #c53030;{% else %}#ebf8ff; color: #2b6cb0;{% endif %}">
                                     {{ record.status.capitalize() }}
                                 </span>
                             </td>
-                            <td>
+                            <td style="text-align: right; padding-right: 20px; font-family: monospace;">
                                 {% if record.check_in and record.check_out %}
                                     {% set duration = record.check_out - record.check_in %}
-                                    {{ (duration.total_seconds() / 3600) | round(2) }} hrs
+                                    {{ (duration.total_seconds() / 3600) | round(2) }}h
                                 {% else %}
                                     -
                                 {% endif %}
@@ -133,12 +118,6 @@
                         {% endfor %}
                     </tbody>
                 </table>
-
-                {% if not records %}
-                <div class="empty-state">
-                    <p>No attendance records found for this period</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
