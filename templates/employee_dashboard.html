@@ -8,10 +8,9 @@
 </head>
 <body>
     <div class="navbar">
-        <div class="nav-container">
+        <div class="nav-container" style="display: contents;">
             <div class="nav-brand">
-                <h2>Attendance System</h2>
-                <span class="role-badge">Employee</span>
+                <h2>BlueSky HRM</h2>
             </div>
             <div class="nav-menu">
                 <a href="{{ url_for('employee_dashboard') }}" class="nav-link active">Dashboard</a>
@@ -24,131 +23,55 @@
     <div class="main-container">
         <div class="page-header">
             <h1>Welcome, {{ current_user.full_name }}</h1>
-            <p class="text-muted">Today's attendance status</p>
         </div>
 
         <div class="dashboard-grid">
+            <!-- Attendance Card -->
             <div class="card">
                 <div class="card-header">
-                    <h3>Daily Attendance</h3>
+                    <h3>Punch In/Out</h3>
                 </div>
                 <div class="card-body">
-                    <div class="attendance-status">
-                        {% if attendance and attendance.check_in %}
-                            <div class="status-item">
-                                <span class="label">Check-In:</span>
-                                <span class="time">{{ attendance.check_in.strftime('%H:%M:%S') }}</span>
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div id="current-time" style="font-size: 40px; font-weight: 800; color: var(--primary-blue); margin-bottom: 20px;">00:00:00</div>
+                        
+                        <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                            <div style="flex: 1; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 12px; color: #888;">Check-In</div>
+                                <div style="font-weight: 700;">{{ attendance.check_in.strftime('%H:%M:%S') if attendance and attendance.check_in else '--:--:--' }}</div>
                             </div>
-                        {% else %}
-                            <div class="status-item">
-                                <span class="label">Check-In:</span>
-                                <span class="time text-muted">Not yet</span>
+                            <div style="flex: 1; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 12px; color: #888;">Check-Out</div>
+                                <div style="font-weight: 700;">{{ attendance.check_out.strftime('%H:%M:%S') if attendance and attendance.check_out else '--:--:--' }}</div>
                             </div>
-                        {% endif %}
+                        </div>
 
-                        {% if attendance and attendance.check_out %}
-                            <div class="status-item">
-                                <span class="label">Check-Out:</span>
-                                <span class="time">{{ attendance.check_out.strftime('%H:%M:%S') }}</span>
-                            </div>
-                        {% else %}
-                            <div class="status-item">
-                                <span class="label">Check-Out:</span>
-                                <span class="time text-muted">Not yet</span>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="current-time">
-                        <span id="current-time">00:00:00</span>
-                    </div>
-
-                    <div class="button-group">
                         {% if not attendance or not attendance.check_in %}
-                            <button class="btn btn-success btn-full" onclick="checkIn()">Check In</button>
+                            <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="checkIn()">Punch In</button>
+                        {% elif not attendance.check_out %}
+                            <button class="btn" style="width: 100%; padding: 15px; background: var(--danger); color: white;" onclick="checkOut()">Punch Out</button>
                         {% else %}
-                            <button class="btn btn-success btn-full" disabled>Checked In ✓</button>
-                        {% endif %}
-
-                        {% if attendance and attendance.check_in and not attendance.check_out %}
-                            <button class="btn btn-danger btn-full" onclick="checkOut()">Check Out</button>
-                        {% elif attendance and attendance.check_out %}
-                            <button class="btn btn-danger btn-full" disabled>Checked Out ✓</button>
-                        {% else %}
-                            <button class="btn btn-danger btn-full" disabled>Check Out</button>
+                            <div style="padding: 15px; background: #e6fffa; color: #2c7a7b; border-radius: 8px; font-weight: 700;">Shift Completed ✓</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
+            <!-- Schedule Widget -->
             <div class="card">
                 <div class="card-header">
-                    <h3>Quick Stats</h3>
+                    <h3>Today's Schedule</h3>
                 </div>
                 <div class="card-body">
-                    <div class="stat-item">
-                        <span class="label">Current Time:</span>
-                        <span id="quick-time" class="value">00:00:00</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Date:</span>
-                        <span id="quick-date" class="value">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Status:</span>
-                        {% if attendance and attendance.check_in %}
-                            <span class="value status-badge status-present">Present</span>
-                        {% else %}
-                            <span class="value status-badge status-absent">Not Yet Checked In</span>
-                        {% endif %}
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Today's Shift:</span>
-                        {% if today_rota %}
-                            <span class="value">{{ today_rota.shift_start.strftime('%H:%M') }} - {{ today_rota.shift_end.strftime('%H:%M') }}</span>
-                        {% else %}
-                            <span class="value text-muted">No schedule</span>
-                        {% endif %}
-                    </div>
+                    {% if today_rota %}
+                        <div style="padding: 20px; background: #ebf8ff; border-radius: 12px; border-left: 4px solid var(--secondary-blue);">
+                            <div style="font-size: 14px; color: var(--primary-blue); font-weight: 700;">Shift Timing</div>
+                            <div style="font-size: 24px; font-weight: 800; margin-top: 5px;">{{ today_rota.shift_start.strftime('%H:%M') }} - {{ today_rota.shift_end.strftime('%H:%M') }}</div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; color: #888; padding: 40px 0;">No schedule assigned for today</div>
+                    {% endif %}
                 </div>
-            </div>
-        </div>
-
-        <!-- Weekly Schedule -->
-        <div class="card">
-            <div class="card-header">
-                <h3>My Weekly Schedule</h3>
-            </div>
-            <div class="card-body">
-                {% if all_rotas %}
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Day</th>
-                            <th>Shift Start</th>
-                            <th>Shift End</th>
-                            <th>Duration</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rota in all_rotas %}
-                        <tr>
-                            <td><strong>{{ rota.day_of_week }}</strong></td>
-                            <td>{{ rota.shift_start.strftime('%H:%M') }}</td>
-                            <td>{{ rota.shift_end.strftime('%H:%M') }}</td>
-                            <td>
-                                {% set hours = ((rota.shift_end.hour * 60 + rota.shift_end.minute) - (rota.shift_start.hour * 60 + rota.shift_start.minute)) / 60 %}
-                                {{ "%.1f"|format(hours) }} hrs
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="empty-state">
-                    <p>No schedule assigned yet. Please contact your administrator.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>

@@ -8,15 +8,13 @@
 </head>
 <body>
     <div class="navbar">
-        <div class="nav-container">
+        <div class="nav-container" style="display: contents;">
             <div class="nav-brand">
-                <h2>Attendance System</h2>
-                <span class="role-badge role-admin">Admin</span>
+                <h2>BlueSky HRM</h2>
             </div>
             <div class="nav-menu">
                 <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
-                <a href="{{ url_for('manage_employees') }}" class="nav-link active">Employees</a>
-                <a href="{{ url_for('manage_rotas') }}" class="nav-link">Rotas</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link active">PIM</a>
                 <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
                 <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
                 <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
@@ -25,121 +23,73 @@
     </div>
 
     <div class="main-container">
-        <div class="page-header">
-            <h1>Manage Employees</h1>
-            <p class="text-muted">View and manage users with filters</p>
-            <a href="{{ url_for('add_employee') }}" class="btn btn-success">+ Add New Employee</a>
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Employee Management (PIM)</h1>
+            <a href="{{ url_for('add_employee') }}" class="btn btn-primary">+ Add Employee</a>
         </div>
 
         <!-- Filter Toolbar -->
-        <div class="card">
+        <div class="card" style="margin-bottom: 24px;">
             <div class="card-header">
                 <h3>Search & Filters</h3>
             </div>
             <div class="card-body">
-                <form method="GET" class="form-inline" action="{{ url_for('manage_employees') }}">
-                    <div class="form-group">
-                        <label for="username">Username/Name/Email</label>
-                        <input type="text" id="username" name="username" placeholder="Search" value="{{ username_q or '' }}">
+                <form method="GET" class="form-inline" action="{{ url_for('manage_employees') }}" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                        <label for="username">Search Name/ID</label>
+                        <input type="text" id="username" name="username" placeholder="Type here..." value="{{ username_q or '' }}">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="width: 150px; margin-bottom: 0;">
                         <label for="role">Role</label>
-                        <select id="role" name="role">
+                        <select id="role" name="role" style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid var(--border-color);">
                             <option value="employee" {% if role_filter=='employee' %}selected{% endif %}>Employee</option>
                             <option value="admin" {% if role_filter=='admin' %}selected{% endif %}>Admin</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="status">Status</label>
-                        <select id="status" name="status">
-                            <option value="" {% if not status_filter %}selected{% endif %}>Any</option>
-                            <option value="active" {% if status_filter=='active' %}selected{% endif %}>Active</option>
-                            <option value="inactive" {% if status_filter=='inactive' %}selected{% endif %}>Inactive</option>
-                        </select>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <a href="{{ url_for('manage_employees') }}" class="btn" style="background: #eee; color: #333;">Reset</a>
                     </div>
-                    <button type="submit" class="btn btn-primary">Search</button>
-                    <a href="{{ url_for('manage_employees') }}" class="btn btn-outline">Reset</a>
                 </form>
             </div>
         </div>
 
-        <!-- Results & Actions -->
         <div class="card">
-            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <h3>Results</h3>
-                <div class="button-group">
-                    <a href="{{ url_for('add_employee') }}" class="btn btn-success">+ Add</a>
-                    <form id="bulkDeleteForm" method="POST" action="{{ url_for('delete_employees_bulk') }}">
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete selected employees? Admins and your own account will be skipped.')">Delete Selected</button>
-                    </form>
-                </div>
+            <div class="card-header">
+                <h3>Employee List</h3>
             </div>
-            <div class="card-body">
-                <table class="table">
-                    <thead>
+            <div class="card-body" style="padding: 0;">
+                <table class="table" style="margin-bottom: 0;">
+                    <thead style="background: #f8f9fa;">
                         <tr>
-                            <th style="width:36px;">
-                                <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
-                            </th>
-                            <th>Full Name</th>
+                            <th style="padding: 16px 20px;">Full Name</th>
                             <th>Username</th>
                             <th>Email</th>
                             <th>Department</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th style="text-align: right; padding-right: 20px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for employee in employees.items %}
                         <tr>
-                            <td>
-                                <input type="checkbox" name="ids" form="bulkDeleteForm" value="{{ employee.id }}">
-                            </td>
-                            <td>{{ employee.full_name }}</td>
+                            <td style="padding: 16px 20px; font-weight: 600;">{{ employee.full_name }}</td>
                             <td>{{ employee.username }}</td>
                             <td>{{ employee.email }}</td>
                             <td>{{ employee.department or '-' }}</td>
                             <td>
-                                <span class="status-badge {% if employee.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                <span style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: {% if employee.is_active %}#e6fffa; color: #2c7a7b;{% else %}#fff5f5; color: #c53030;{% endif %}">
                                     {% if employee.is_active %}Active{% else %}Inactive{% endif %}
                                 </span>
                             </td>
-                            <td>
-                                <a href="{{ url_for('view_employee', employee_id=employee.id) }}" class="btn btn-sm btn-info">View Records</a>
+                            <td style="text-align: right; padding-right: 20px;">
+                                <a href="{{ url_for('view_employee', employee_id=employee.id) }}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">View Records</a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-
-                {% if not employees.items %}
-                <div class="empty-state">
-                    <p>No employees found. <a href="{{ url_for('add_employee') }}">Add one now</a></p>
-                </div>
-                {% endif %}
             </div>
-
-            {% if employees.pages > 1 %}
-            <div class="pagination">
-                {% if employees.has_prev %}
-                    <a href="{{ url_for('manage_employees', page=employees.prev_num) }}" class="btn btn-outline">Previous</a>
-                {% endif %}
-
-                {% for page_num in employees.iter_pages() %}
-                    {% if page_num %}
-                        {% if page_num == employees.page %}
-                            <span class="page-active">{{ page_num }}</span>
-                        {% else %}
-                            <a href="{{ url_for('manage_employees', page=page_num) }}" class="btn btn-outline">{{ page_num }}</a>
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-
-                {% if employees.has_next %}
-                    <a href="{{ url_for('manage_employees', page=employees.next_num) }}" class="btn btn-outline">Next</a>
-                {% endif %}
-            </div>
-            {% endif %}
         </div>
     </div>
 
