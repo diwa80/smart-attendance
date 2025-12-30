@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Records - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Attendance System</h2>
+                <span class="role-badge">Employee</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('employee_dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('my_records') }}" class="nav-link active">My Records</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>My Attendance Records</h1>
+            <p class="text-muted">View your attendance history</p>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Check-In</th>
+                            <th>Check-Out</th>
+                            <th>Status</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records.items %}
+                        <tr>
+                            <td>{{ record.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ record.check_in.strftime('%H:%M:%S') if record.check_in else '-' }}</td>
+                            <td>{{ record.check_out.strftime('%H:%M:%S') if record.check_out else '-' }}</td>
+                            <td>
+                                <span class="status-badge status-{{ record.status.lower() }}">
+                                    {{ record.status.capitalize() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if record.check_in and record.check_out %}
+                                    {% set duration = record.check_out - record.check_in %}
+                                    {{ (duration.total_seconds() / 3600) | round(2) }} hrs
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if not records.items %}
+                <div class="empty-state">
+                    <p>No attendance records found</p>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if records.pages > 1 %}
+            <div class="pagination">
+                {% if records.has_prev %}
+                    <a href="{{ url_for('my_records', page=records.prev_num) }}" class="btn btn-outline">Previous</a>
+                {% endif %}
+
+                {% for page_num in records.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == records.page %}
+                            <span class="page-active">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('my_records', page=page_num) }}" class="btn btn-outline">{{ page_num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if records.has_next %}
+                    <a href="{{ url_for('my_records', page=records.next_num) }}" class="btn btn-outline">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

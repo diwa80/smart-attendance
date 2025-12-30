@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Employee - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Attendance System</h2>
+                <span class="role-badge role-admin">Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link active">Employees</a>
+                <a href="{{ url_for('manage_rotas') }}" class="nav-link">Rotas</a>
+                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
+                <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Add New Employee</h1>
+            <p class="text-muted">Create a new employee account</p>
+        </div>
+
+        <div class="form-container">
+            <div class="card">
+                {% if error %}
+                <div class="alert alert-error">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_employee') }}" class="form">
+                        <div class="form-group">
+                            <label for="full_name">Full Name *</label>
+                            <input type="text" id="full_name" name="full_name" required placeholder="Enter employee's full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="username">Username *</label>
+                            <input type="text" id="username" name="username" required placeholder="Enter unique username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" required placeholder="Enter email address">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="department">Department</label>
+                            <input type="text" id="department" name="department" placeholder="Enter department">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password *</label>
+                            <input type="password" id="password" name="password" required placeholder="Enter password">
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Add Employee</button>
+                            <a href="{{ url_for('manage_employees') }}" class="btn btn-outline">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

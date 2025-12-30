@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Rotas - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Attendance System</h2>
+                <span class="role-badge role-admin">Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link">Employees</a>
+                <a href="{{ url_for('manage_rotas') }}" class="nav-link active">Rotas</a>
+                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
+                <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Manage Employee Rotas</h1>
+            <p class="text-muted">Assign and manage employee work schedules</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Employees</h3>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Employee Name</th>
+                            <th>Username</th>
+                            <th>Department</th>
+                            <th>Assigned Shifts</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employee in employees %}
+                        <tr>
+                            <td>{{ employee.full_name }}</td>
+                            <td>{{ employee.username }}</td>
+                            <td>{{ employee.department or '-' }}</td>
+                            <td>
+                                {% set rota_count = employee.rotas|selectattr('is_active')|list|length %}
+                                {{ rota_count }} day(s)
+                            </td>
+                            <td>
+                                <a href="{{ url_for('employee_rotas', employee_id=employee.id) }}" class="btn btn-sm btn-primary">Manage Schedule</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                {% if not employees %}
+                <div class="empty-state">
+                    <p>No employees found. <a href="{{ url_for('add_employee') }}">Add one now</a></p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Attendance System</h2>
+                <span class="role-badge">Employee</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('employee_dashboard') }}" class="nav-link active">Dashboard</a>
+                <a href="{{ url_for('my_records') }}" class="nav-link">My Records</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Welcome, {{ current_user.full_name }}</h1>
+            <p class="text-muted">Today's attendance status</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Daily Attendance</h3>
+                </div>
+                <div class="card-body">
+                    <div class="attendance-status">
+                        {% if attendance and attendance.check_in %}
+                            <div class="status-item">
+                                <span class="label">Check-In:</span>
+                                <span class="time">{{ attendance.check_in.strftime('%H:%M:%S') }}</span>
+                            </div>
+                        {% else %}
+                            <div class="status-item">
+                                <span class="label">Check-In:</span>
+                                <span class="time text-muted">Not yet</span>
+                            </div>
+                        {% endif %}
+
+                        {% if attendance and attendance.check_out %}
+                            <div class="status-item">
+                                <span class="label">Check-Out:</span>
+                                <span class="time">{{ attendance.check_out.strftime('%H:%M:%S') }}</span>
+                            </div>
+                        {% else %}
+                            <div class="status-item">
+                                <span class="label">Check-Out:</span>
+                                <span class="time text-muted">Not yet</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="current-time">
+                        <span id="current-time">00:00:00</span>
+                    </div>
+
+                    <div class="button-group">
+                        {% if not attendance or not attendance.check_in %}
+                            <button class="btn btn-success btn-full" onclick="checkIn()">Check In</button>
+                        {% else %}
+                            <button class="btn btn-success btn-full" disabled>Checked In ✓</button>
+                        {% endif %}
+
+                        {% if attendance and attendance.check_in and not attendance.check_out %}
+                            <button class="btn btn-danger btn-full" onclick="checkOut()">Check Out</button>
+                        {% elif attendance and attendance.check_out %}
+                            <button class="btn btn-danger btn-full" disabled>Checked Out ✓</button>
+                        {% else %}
+                            <button class="btn btn-danger btn-full" disabled>Check Out</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Quick Stats</h3>
+                </div>
+                <div class="card-body">
+                    <div class="stat-item">
+                        <span class="label">Current Time:</span>
+                        <span id="quick-time" class="value">00:00:00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Date:</span>
+                        <span id="quick-date" class="value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Status:</span>
+                        {% if attendance and attendance.check_in %}
+                            <span class="value status-badge status-present">Present</span>
+                        {% else %}
+                            <span class="value status-badge status-absent">Not Yet Checked In</span>
+                        {% endif %}
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Today's Shift:</span>
+                        {% if today_rota %}
+                            <span class="value">{{ today_rota.shift_start.strftime('%H:%M') }} - {{ today_rota.shift_end.strftime('%H:%M') }}</span>
+                        {% else %}
+                            <span class="value text-muted">No schedule</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Schedule -->
+        <div class="card">
+            <div class="card-header">
+                <h3>My Weekly Schedule</h3>
+            </div>
+            <div class="card-body">
+                {% if all_rotas %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Shift Start</th>
+                            <th>Shift End</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rota in all_rotas %}
+                        <tr>
+                            <td><strong>{{ rota.day_of_week }}</strong></td>
+                            <td>{{ rota.shift_start.strftime('%H:%M') }}</td>
+                            <td>{{ rota.shift_end.strftime('%H:%M') }}</td>
+                            <td>
+                                {% set hours = ((rota.shift_end.hour * 60 + rota.shift_end.minute) - (rota.shift_start.hour * 60 + rota.shift_start.minute)) / 60 %}
+                                {{ "%.1f"|format(hours) }} hrs
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <p>No schedule assigned yet. Please contact your administrator.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+            const dateString = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            document.getElementById('current-time').textContent = timeString;
+            document.getElementById('quick-time').textContent = timeString;
+            document.getElementById('quick-date').textContent = dateString;
+        }
+
+        function checkIn() {
+            fetch('{{ url_for("check_in") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Check-in successful at ' + data.time);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function checkOut() {
+            fetch('{{ url_for("check_out") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Check-out successful at ' + data.time);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>

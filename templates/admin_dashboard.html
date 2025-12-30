@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Attendance System</h2>
+                <span class="role-badge role-admin">Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">Dashboard</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link">Employees</a>
+                <a href="{{ url_for('manage_rotas') }}" class="nav-link">Rotas</a>
+                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
+                <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Admin Dashboard</h1>
+            <p class="text-muted">System overview and statistics</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <h3>Total Employees</h3>
+                    <p class="stat-value" id="total-employees">{{ total_employees }}</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">✓</div>
+                <div class="stat-content">
+                    <h3>Present Today</h3>
+                    <p class="stat-value" id="present-today">{{ present_today }}</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">✕</div>
+                <div class="stat-content">
+                    <h3>Absent Today</h3>
+                    <p class="stat-value" id="absent-today">0</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">⏰</div>
+                <div class="stat-content">
+                    <h3>Current Time</h3>
+                    <p class="stat-value" id="current-time">00:00:00</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="button-group-vertical">
+                        <a href="{{ url_for('manage_employees') }}" class="btn btn-primary">Manage Employees</a>
+                        <a href="{{ url_for('add_employee') }}" class="btn btn-success">Add New Employee</a>
+                        <a href="{{ url_for('manage_rotas') }}" class="btn btn-info">Manage Employee Rotas</a>
+                        <a href="{{ url_for('attendance_records') }}" class="btn btn-info">View Attendance Records</a>
+                        <a href="{{ url_for('reports') }}" class="btn btn-warning">Generate Reports</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>System Info</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <span class="label">Administrator:</span>
+                        <span class="value">{{ current_user.full_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Email:</span>
+                        <span class="value">{{ current_user.email }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Login Time:</span>
+                        <span id="login-time" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Current Date:</span>
+                        <span id="current-date" class="value">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateStats() {
+            fetch('{{ url_for("get_stats") }}')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-employees').textContent = data.total_employees;
+                    document.getElementById('present-today').textContent = data.present_today;
+                    document.getElementById('absent-today').textContent = data.absent_today;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+            const dateString = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            document.getElementById('current-time').textContent = timeString;
+            document.getElementById('current-date').textContent = dateString;
+            document.getElementById('login-time').textContent = timeString;
+        }
+
+        updateTime();
+        updateStats();
+        setInterval(updateTime, 1000);
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>

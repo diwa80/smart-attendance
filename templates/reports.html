@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Attendance System</h2>
+                <span class="role-badge role-admin">Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link">Employees</a>
+                <a href="{{ url_for('manage_rotas') }}" class="nav-link">Rotas</a>
+                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
+                <a href="{{ url_for('reports') }}" class="nav-link active">Reports</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1>Reports</h1>
+            <p class="text-muted">Generate and view attendance reports</p>
+        </div>
+
+        <!-- Report Type Selector -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Select Report Type</h3>
+            </div>
+            <div class="card-body">
+                <div class="report-selector">
+                    <a href="{{ url_for('reports', type='monthly') }}" class="report-btn {% if report_type == 'monthly' %}active{% endif %}">
+                        <span class="report-icon">📊</span>
+                        <span class="report-title">Monthly Summary</span>
+                    </a>
+                    <a href="{{ url_for('reports', type='employee') }}" class="report-btn {% if report_type == 'employee' %}active{% endif %}">
+                        <span class="report-icon">👥</span>
+                        <span class="report-title">Employee Summary</span>
+                    </a>
+                    <a href="{{ url_for('reports', type='working_hours') }}" class="report-btn {% if report_type == 'working_hours' %}active{% endif %}">
+                        <span class="report-icon">⏱️</span>
+                        <span class="report-title">Working Hours</span>
+                    </a>
+                    <a href="{{ url_for('reports', type='absence') }}" class="report-btn {% if report_type == 'absence' %}active{% endif %}">
+                        <span class="report-icon">❌</span>
+                        <span class="report-title">Absence Report</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Filters -->
+        {% if report_type in ['monthly', 'working_hours', 'absence'] %}
+        <div class="card">
+            <div class="card-header">
+                <h3>Filter Options</h3>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="form-inline">
+                    <input type="hidden" name="type" value="{{ report_type }}">
+                    <div class="form-group">
+                        <label for="month">Month:</label>
+                        <select id="month" name="month" onchange="this.form.submit()">
+                            {% for m in range(1, 13) %}
+                                <option value="{{ m }}" {% if m == month %}selected{% endif %}>
+                                    {{ ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m-1] }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="year">Year:</label>
+                        <select id="year" name="year" onchange="this.form.submit()">
+                            {% for y in range(2023, 2027) %}
+                                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Monthly Report -->
+        {% if report_type == 'monthly' and report_data %}
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Monthly Attendance Summary - {{ ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month-1] }} {{ year }}</h3>
+                <a href="{{ url_for('export_monthly_report', month=month, year=year) }}" class="btn btn-success btn-sm">📥 Export to Excel</a>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">✓</div>
+                        <div class="stat-content">
+                            <h3>Total Present</h3>
+                            <p class="stat-value">{{ report_data.summary.total_present }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✕</div>
+                        <div class="stat-content">
+                            <h3>Total Absent</h3>
+                            <p class="stat-value">{{ report_data.summary.total_absent }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-content">
+                            <h3>Total Leave</h3>
+                            <p class="stat-value">{{ report_data.summary.total_leave }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <h3>Total Records</h3>
+                            <p class="stat-value">{{ report_data.summary.total_records }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 30px; margin-bottom: 15px;">Daily Breakdown</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Leave</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for date, stats in report_data.daily_stats.items() %}
+                        <tr>
+                            <td>{{ date }}</td>
+                            <td>{{ ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][(loop.index0 + 0) % 7] }}</td>
+                            <td><span class="status-badge status-present">{{ stats.present }}</span></td>
+                            <td><span class="status-badge status-absent">{{ stats.absent }}</span></td>
+                            <td><span class="status-badge status-leave">{{ stats.leave }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Employee Summary Report -->
+        {% if report_type == 'employee' and report_data %}
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Employee Attendance Summary (All Time)</h3>
+                <a href="{{ url_for('export_employee_report') }}" class="btn btn-success btn-sm">📥 Export to Excel</a>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Employee Name</th>
+                            <th>Username</th>
+                            <th>Department</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Leave</th>
+                            <th>Total Records</th>
+                            <th>Total Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in report_data.employees %}
+                        <tr>
+                            <td>{{ emp.name }}</td>
+                            <td>{{ emp.username }}</td>
+                            <td>{{ emp.department }}</td>
+                            <td><span class="status-badge status-present">{{ emp.total_present }}</span></td>
+                            <td><span class="status-badge status-absent">{{ emp.total_absent }}</span></td>
+                            <td><span class="status-badge status-leave">{{ emp.total_leave }}</span></td>
+                            <td>{{ emp.total_records }}</td>
+                            <td>{{ emp.total_hours }} hrs</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No employees found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Working Hours Report -->
+        {% if report_type == 'working_hours' and report_data %}
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Working Hours Report - {{ ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month-1] }} {{ year }}</h3>
+                <a href="{{ url_for('export_working_hours_report', month=month, year=year) }}" class="btn btn-success btn-sm">📥 Export to Excel</a>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-content">
+                            <h3>Total Hours</h3>
+                            <p class="stat-value">{{ report_data.total_hours }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <h3>Average Hours</h3>
+                            <p class="stat-value">{{ report_data.average_hours }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 30px; margin-bottom: 15px;">Employee-wise Working Hours</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Employee Name</th>
+                            <th>Username</th>
+                            <th>Department</th>
+                            <th>Working Days</th>
+                            <th>Total Hours</th>
+                            <th>Average Hours/Day</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in report_data.employees %}
+                        <tr>
+                            <td>{{ emp.name }}</td>
+                            <td>{{ emp.username }}</td>
+                            <td>{{ emp.department }}</td>
+                            <td>{{ emp.working_days }}</td>
+                            <td>{{ emp.total_hours }} hrs</td>
+                            <td>{{ emp.average_hours }} hrs</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Absence Report -->
+        {% if report_type == 'absence' and report_data %}
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Absence Report - {{ ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month-1] }} {{ year }}</h3>
+                <a href="{{ url_for('export_absence_report', month=month, year=year) }}" class="btn btn-success btn-sm">📥 Export to Excel</a>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">❌</div>
+                        <div class="stat-content">
+                            <h3>Total Absences</h3>
+                            <p class="stat-value">{{ report_data.total_absences }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if report_data.absences %}
+                <h4 style="margin-top: 30px; margin-bottom: 15px;">Absence Details</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Employee Name</th>
+                            <th>Username</th>
+                            <th>Department</th>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for absence in report_data.absences %}
+                        <tr>
+                            <td>{{ absence.employee_name }}</td>
+                            <td>{{ absence.username }}</td>
+                            <td>{{ absence.department }}</td>
+                            <td>{{ absence.date }}</td>
+                            <td>{{ absence.day }}</td>
+                            <td>{{ absence.notes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <p>No absences recorded for this period</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <style>
+        .report-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .report-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .report-btn:hover,
+        .report-btn.active {
+            border-color: var(--secondary-color);
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .report-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .report-title {
+            font-weight: 600;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .report-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</body>
+</html>

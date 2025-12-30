@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Rota - Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>Attendance System</h2>
+                <span class="role-badge role-admin">Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
+                <a href="{{ url_for('manage_employees') }}" class="nav-link">Employees</a>
+                <a href="{{ url_for('manage_rotas') }}" class="nav-link active">Rotas</a>
+                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
+                <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="page-header">
+            <a href="{{ url_for('manage_rotas') }}" class="btn-back">← Back to Rotas</a>
+            <h1>{{ employee.full_name }}'s Schedule</h1>
+            <p class="text-muted">Manage work schedule for {{ employee.username }}</p>
+        </div>
+
+        <!-- Add New Rota -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Add/Update Shift</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="form-inline">
+                    <div class="form-group">
+                        <label for="day_of_week">Day of Week</label>
+                        <select id="day_of_week" name="day_of_week" required>
+                            <option value="">Select Day</option>
+                            {% for day in days_of_week %}
+                                <option value="{{ day }}">{{ day }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shift_start">Shift Start</label>
+                        <input type="time" id="shift_start" name="shift_start" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shift_end">Shift End</label>
+                        <input type="time" id="shift_end" name="shift_end" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">Add/Update Shift</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Current Schedule -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Current Weekly Schedule</h3>
+            </div>
+            <div class="card-body">
+                {% if rotas %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Shift Start</th>
+                            <th>Shift End</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rota in rotas %}
+                        <tr>
+                            <td><strong>{{ rota.day_of_week }}</strong></td>
+                            <td>{{ rota.shift_start.strftime('%H:%M') }}</td>
+                            <td>{{ rota.shift_end.strftime('%H:%M') }}</td>
+                            <td>
+                                {% set hours = ((rota.shift_end.hour * 60 + rota.shift_end.minute) - (rota.shift_start.hour * 60 + rota.shift_start.minute)) / 60 %}
+                                {{ "%.1f"|format(hours) }} hrs
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('delete_rota', rota_id=rota.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this shift?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="info-box">
+                    <strong>ℹ️ Note:</strong> Employees can check in 30 minutes before their shift start time and must check in before their shift ends.
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No shifts assigned yet. Use the form above to add shifts.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .info-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e7f3ff;
+            border-left: 4px solid var(--info-color);
+            border-radius: 4px;
+        }
+    </style>
+</body>
+</html>
