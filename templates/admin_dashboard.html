@@ -3,27 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Attendance System</title>
+    <title>Dashboard - D Attendance</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="navbar">
-        <div class="nav-container" style="display: contents;">
-            <div class="nav-brand">
-                <h2>BlueSky HRM</h2>
-            </div>
-            <div class="nav-menu">
-                <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">Dashboard</a>
-                <a href="{{ url_for('manage_employees') }}" class="nav-link">PIM</a>
-                <a href="{{ url_for('manage_rotas') }}" class="nav-link">Rotas</a>
-                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
-                <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
-                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="top-header-left">
+            <div class="top-header-logo">D Attendance</div>
+        </div>
+        <div class="top-header-right">
+            <div class="user-menu" onclick="toggleUserMenu(event)">
+                <div class="user-avatar">{{ current_user.full_name[0].upper() }}</div>
+                <span>{{ current_user.full_name }}</span>
+                <span style="margin-left: 5px;">▼</span>
+                <div class="user-dropdown">
+                    <a href="{{ url_for('profile') }}" class="user-dropdown-item">
+                        <span>👤</span>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="user-dropdown-item">
+                        <span>🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-menu">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-menu-item active">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="{{ url_for('manage_employees') }}" class="sidebar-menu-item">
+                <i>👥</i> PIM
+            </a>
+            <a href="{{ url_for('manage_rotas') }}" class="sidebar-menu-item">
+                <i>📅</i> Rotas
+            </a>
+            <a href="{{ url_for('attendance_records') }}" class="sidebar-menu-item">
+                <i>⏰</i> Attendance
+            </a>
+            <a href="{{ url_for('reports') }}" class="sidebar-menu-item">
+                <i>📈</i> Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
         <div class="page-header">
             <h1>Dashboard</h1>
         </div>
@@ -35,9 +65,25 @@
                     <h3>Time at Work</h3>
                 </div>
                 <div class="card-body">
-                    <div style="text-align: center; padding: 20px 0;">
-                        <div id="current-time" style="font-size: 40px; font-weight: 800; color: var(--primary-blue);">00:00:00</div>
-                        <div id="current-date" style="color: #888; margin-top: 5px;">-</div>
+                    <div style="padding: 10px 0;">
+                        <div style="max-height: 320px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead style="position: sticky; top: 0; background: var(--card-bg); z-index: 1;">
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <th style="text-align: left; padding: 10px; font-size: 12px; color: var(--text-secondary); font-weight: 600;">Employee</th>
+                                        <th style="text-align: center; padding: 10px; font-size: 12px; color: var(--text-secondary); font-weight: 600;">Hours</th>
+                                        <th style="text-align: center; padding: 10px; font-size: 12px; color: var(--text-secondary); font-weight: 600;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employee-hours-list">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                                            Loading...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -47,23 +93,31 @@
                 <div class="card-header">
                     <h3>Quick Launch</h3>
                 </div>
-                <div class="card-body">
-                    <div class="quick-actions-grid">
+                <div class="card-body quick-launch">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 15px; justify-items: center; padding: 15px 20px;">
                         <a href="{{ url_for('add_employee') }}" class="quick-action-btn">
-                            <span style="font-size: 20px;">➕</span>
+                            <span>➕</span>
                             <span>Add Employee</span>
                         </a>
                         <a href="{{ url_for('attendance_records') }}" class="quick-action-btn">
-                            <span style="font-size: 20px;">📋</span>
+                            <span>📋</span>
                             <span>Attendance</span>
                         </a>
                         <a href="{{ url_for('reports') }}" class="quick-action-btn">
-                            <span style="font-size: 20px;">📊</span>
+                            <span>📊</span>
                             <span>Reports</span>
                         </a>
                         <a href="{{ url_for('manage_employees') }}" class="quick-action-btn">
-                            <span style="font-size: 20px;">👥</span>
+                            <span>👥</span>
                             <span>PIM</span>
+                        </a>
+                        <a href="{{ url_for('manage_rotas') }}" class="quick-action-btn">
+                            <span>📅</span>
+                            <span>Rotas</span>
+                        </a>
+                        <a href="{{ url_for('reports') }}" class="quick-action-btn">
+                            <span>📈</span>
+                            <span>Analytics</span>
                         </a>
                     </div>
                 </div>
@@ -75,35 +129,43 @@
                     <h3>Employee Statistics</h3>
                 </div>
                 <div class="card-body">
-                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 0;">
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 0;">
                         <div style="text-align: center;">
                             <div class="stat-label">Total Employees</div>
                             <div class="stat-value" id="total-employees">{{ total_employees }}</div>
                         </div>
                         <div style="text-align: center;">
                             <div class="stat-label">Present Today</div>
-                            <div class="stat-value" id="present-today" style="color: var(--accent-teal);">{{ present_today }}</div>
+                            <div class="stat-value" id="present-today" style="color: var(--success);">{{ present_today }}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="stat-label">Absent Today</div>
+                            <div class="stat-value" id="absent-today" style="color: var(--danger);">0</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Pending Actions -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>System Alerts</h3>
-                </div>
-                <div class="card-body">
-                    <div id="absent-today-section" style="padding: 10px; background: #fff5f5; border-radius: 8px; border-left: 4px solid var(--danger);">
-                        <div style="font-weight: 700; color: var(--danger);">Absent Today</div>
-                        <div id="absent-today" style="font-size: 20px; font-weight: 800;">0</div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
     <script>
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = event.currentTarget;
+            menu.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const userMenus = document.querySelectorAll('.user-menu');
+            userMenus.forEach(menu => {
+                if (!menu.contains(event.target)) {
+                    menu.classList.remove('active');
+                }
+            });
+        });
+
         function updateStats() {
             fetch('{{ url_for("get_stats") }}')
                 .then(response => response.json())
@@ -115,20 +177,67 @@
                 .catch(error => console.error('Error:', error));
         }
 
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
-            const dateString = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            
-            document.getElementById('current-time').textContent = timeString;
-            document.getElementById('current-date').textContent = dateString;
-            document.getElementById('login-time').textContent = timeString;
+        function updateEmployeeHours() {
+            fetch('{{ url_for("get_employee_hours_today") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('employee-hours-list');
+                    
+                    if (data.employees.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                                    No employees found
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.employees.map(emp => {
+                        let statusColor = 'var(--text-secondary)';
+                        let statusBg = 'transparent';
+                        
+                        if (emp.status === 'Working') {
+                            statusColor = 'var(--success)';
+                            statusBg = 'rgba(76, 175, 80, 0.1)';
+                        } else if (emp.status === 'Checked Out') {
+                            statusColor = 'var(--primary-color)';
+                            statusBg = 'rgba(52, 152, 219, 0.1)';
+                        } else {
+                            statusColor = 'var(--text-secondary)';
+                            statusBg = 'rgba(149, 165, 166, 0.1)';
+                        }
+                        
+                        return `
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 12px 10px; font-size: 13px; color: var(--text-primary);">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 13px;">
+                                            ${emp.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                                        </div>
+                                        <span>${emp.name}</span>
+                                    </div>
+                                </td>
+                                <td style="padding: 12px 10px; text-align: center; font-size: 14px; font-weight: 600; color: var(--primary-color);">
+                                    ${emp.hours}
+                                </td>
+                                <td style="padding: 12px 10px; text-align: center;">
+                                    <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; color: ${statusColor}; background: ${statusBg};">
+                                        ${emp.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .catch(error => console.error('Error:', error));
         }
 
-        updateTime();
         updateStats();
-        setInterval(updateTime, 1000);
+        updateEmployeeHours();
         setInterval(updateStats, 30000);
+        setInterval(updateEmployeeHours, 30000);
     </script>
 </body>
 </html>

@@ -3,15 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance System</title>
+    <title>D Attendance - Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="login-container">
         <div class="login-box">
+            <div class="login-logo">
+                <div class="login-logo-icon">D</div>
+                <div class="login-logo-text">
+                    <h1>D Attendance</h1>
+                    <span>ATTENDANCE MANAGEMENT SYSTEM</span>
+                </div>
+            </div>
+            
             <div class="login-header">
-                <h1>BlueSky HRM</h1>
-                <p>Login</p>
+                <h2>Login</h2>
             </div>
             
             {% if error %}
@@ -24,19 +32,27 @@
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" required placeholder="Username">
+                    <i class="fas fa-user"></i>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" required placeholder="Password">
+                    <i class="fas fa-lock"></i>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-full">Login</button>
             </form>
 
-            <div class="demo-credentials" style="margin-top: 30px; font-size: 12px; color: #777;">
-                <p>Default Admin: <strong>admin</strong> / <strong>admin123</strong></p>
+            <div class="login-copyright">
+                <div>D Attendance System</div>
+                <div>© 2025 D Attendance. All rights reserved.</div>
             </div>
+        </div>
+
+        <div class="login-background-icon">
+            <div class="login-background-icon-inner">D</div>
+            <div class="login-background-text">ATTENDANCE FOR ALL</div>
         </div>
     </div>
 </body>

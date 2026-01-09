@@ -3,76 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Employee - Attendance System</title>
+    <title>Add Employee - D Attendance</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <h2>Attendance System</h2>
-                <span class="role-badge role-admin">Admin</span>
-            </div>
-            <div class="nav-menu">
-                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
-                <a href="{{ url_for('manage_employees') }}" class="nav-link active">Employees</a>
-                <a href="{{ url_for('manage_rotas') }}" class="nav-link">Rotas</a>
-                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
-                <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
-                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="top-header-left">
+            <div class="top-header-logo">D Attendance</div>
+        </div>
+        <div class="top-header-right">
+            <div class="user-menu" onclick="toggleUserMenu(event)">
+                <div class="user-avatar">{{ current_user.full_name[0].upper() }}</div>
+                <span>{{ current_user.full_name }}</span>
+                <span style="margin-left: 5px;">▼</span>
+                <div class="user-dropdown">
+                    <a href="{{ url_for('profile') }}" class="user-dropdown-item">
+                        <span>👤</span>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="user-dropdown-item">
+                        <span>🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-menu">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-menu-item">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="{{ url_for('manage_employees') }}" class="sidebar-menu-item active">
+                <i>👥</i> PIM
+            </a>
+            <a href="{{ url_for('manage_rotas') }}" class="sidebar-menu-item">
+                <i>📅</i> Rotas
+            </a>
+            <a href="{{ url_for('attendance_records') }}" class="sidebar-menu-item">
+                <i>⏰</i> Attendance
+            </a>
+            <a href="{{ url_for('reports') }}" class="sidebar-menu-item">
+                <i>📈</i> Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
         <div class="page-header">
-            <h1>Add New Employee</h1>
-            <p class="text-muted">Create a new employee account</p>
+            <h1>{% if employee %}Edit Employee{% else %}Add New Employee{% endif %}</h1>
+            <p class="text-muted">{% if employee %}Update employee information{% else %}Create a new employee account{% endif %}</p>
         </div>
 
         <div class="form-container">
-            <div class="card">
+            <div class="card" style="max-width: 600px; margin: 0 auto;">
                 {% if error %}
-                <div class="alert alert-error">
-                    {{ error }}
+                <div class="alert alert-error" style="margin-bottom: 20px;">
+                    <strong>⚠️ Error:</strong> {{ error }}
                 </div>
                 {% endif %}
 
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('add_employee') }}" class="form">
-                        <div class="form-group">
-                            <label for="full_name">Full Name *</label>
-                            <input type="text" id="full_name" name="full_name" required placeholder="Enter employee's full name">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%); padding: 30px 20px; border-radius: 8px 8px 0 0; color: white;">
+                    <h2 style="margin: 0 0 10px 0; color: white;">{% if employee %}✏️ Edit Employee{% else %}👤 Add New Employee{% endif %}</h2>
+                    <p style="margin: 0; font-size: 14px; opacity: 0.9;">{% if employee %}Update employee information and settings{% else %}Create a new employee account in the system{% endif %}</p>
+                </div>
+
+                <div class="card-body" style="padding: 40px;">
+                    <form method="POST" action="{{ url_for('add_employee') }}{% if employee %}?id={{ employee.id }}{% endif %}" class="form">
+                        <!-- Personal Information Section -->
+                        <div style="margin-bottom: 40px;">
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--primary-color); font-weight: 700; letter-spacing: 1px; margin-bottom: 20px;">📋 Personal Information</div>
+                            
+                            <div class="form-group">
+                                <label for="full_name" style="font-weight: 600; margin-bottom: 8px;">Full Name *</label>
+                                <input type="text" id="full_name" name="full_name" required placeholder="e.g., John Doe" value="{{ employee.full_name if employee else '' }}" style="padding: 12px 16px; border: 2px solid var(--border-color); font-size: 15px;">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="username" style="font-weight: 600; margin-bottom: 8px;">Username *</label>
+                                <input type="text" id="username" name="username" required placeholder="e.g., john.doe" value="{{ employee.username if employee else '' }}" style="padding: 12px 16px; border: 2px solid var(--border-color); font-size: 15px;">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email" style="font-weight: 600; margin-bottom: 8px;">Email Address *</label>
+                                <input type="email" id="email" name="email" required placeholder="e.g., john@company.com" value="{{ employee.email if employee else '' }}" style="padding: 12px 16px; border: 2px solid var(--border-color); font-size: 15px;">
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="username">Username *</label>
-                            <input type="text" id="username" name="username" required placeholder="Enter unique username">
+                        <!-- Security Section -->
+                        <div style="margin-bottom: 40px; padding-bottom: 30px; border-bottom: 1px solid var(--border-color);">
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--primary-color); font-weight: 700; letter-spacing: 1px; margin-bottom: 20px;">🔐 Security</div>
+                            
+                            <div class="form-group">
+                                <label for="password" style="font-weight: 600; margin-bottom: 8px;">Password {% if not employee %}*{% else %}<span style="color: var(--text-secondary); font-weight: 400;">(optional)</span>{% endif %}</label>
+                                <input type="password" id="password" name="password" {% if not employee %}required{% endif %} placeholder="{% if employee %}Leave blank to keep current password{% else %}Minimum 6 characters recommended{% endif %}" style="padding: 12px 16px; border: 2px solid var(--border-color); font-size: 15px;">
+                                {% if not employee %}<small style="color: var(--text-secondary); margin-top: 4px; display: block;">Password must be strong for security</small>{% endif %}
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="email">Email *</label>
-                            <input type="email" id="email" name="email" required placeholder="Enter email address">
+                        <!-- Status Section (Edit Only) -->
+                        {% if employee %}
+                        <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 500;">
+                                <input type="checkbox" name="is_active" {% if employee.is_active %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+                                <span>{% if employee.is_active %}✅ Active Employee{% else %}🚫 Inactive Employee{% endif %}</span>
+                            </label>
+                            <small style="color: var(--text-secondary); margin-top: 10px; display: block;">Inactive employees cannot log in or perform any actions</small>
                         </div>
+                        {% endif %}
 
-                        <div class="form-group">
-                            <label for="department">Department</label>
-                            <input type="text" id="department" name="department" placeholder="Enter department">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="password">Password *</label>
-                            <input type="password" id="password" name="password" required placeholder="Enter password">
-                        </div>
-
-                        <div class="button-group">
-                            <button type="submit" class="btn btn-primary">Add Employee</button>
-                            <a href="{{ url_for('manage_employees') }}" class="btn btn-outline">Cancel</a>
+                        <!-- Action Buttons -->
+                        <div class="button-group" style="display: flex; gap: 12px; margin-top: 40px;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1; padding: 14px 24px; font-size: 15px; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s;">{% if employee %}💾 Update Employee{% else %}➕ Add Employee{% endif %}</button>
+                            <a href="{{ url_for('manage_employees') }}" class="btn btn-outline" style="flex: 1; padding: 14px 24px; font-size: 15px; font-weight: 600; text-align: center; transition: all 0.3s;">Cancel</a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = event.currentTarget;
+            menu.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(event) {
+            const userMenus = document.querySelectorAll('.user-menu');
+            userMenus.forEach(menu => {
+                if (!menu.contains(event.target)) {
+                    menu.classList.remove('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

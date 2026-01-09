@@ -3,29 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Rota - Attendance System</title>
+    <title>Employee Rota - D Attendance</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="navbar">
-        <div class="nav-container" style="display: contents;">
-            <div class="nav-brand">
-                <h2>BlueSky HRM</h2>
-            </div>
-            <div class="nav-menu">
-                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
-                <a href="{{ url_for('manage_employees') }}" class="nav-link">PIM</a>
-                <a href="{{ url_for('manage_rotas') }}" class="nav-link active">Rotas</a>
-                <a href="{{ url_for('attendance_records') }}" class="nav-link">Attendance</a>
-                <a href="{{ url_for('reports') }}" class="nav-link">Reports</a>
-                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="top-header-left">
+            <div class="top-header-logo">D Attendance</div>
+        </div>
+        <div class="top-header-right">
+            <div class="user-menu" onclick="toggleUserMenu(event)">
+                <div class="user-avatar">{{ current_user.full_name[0].upper() }}</div>
+                <span>{{ current_user.full_name }}</span>
+                <span style="margin-left: 5px;">▼</span>
+                <div class="user-dropdown">
+                    <a href="{{ url_for('profile') }}" class="user-dropdown-item">
+                        <span>👤</span>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="user-dropdown-item">
+                        <span>🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-menu">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-menu-item">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="{{ url_for('manage_employees') }}" class="sidebar-menu-item">
+                <i>👥</i> PIM
+            </a>
+            <a href="{{ url_for('manage_rotas') }}" class="sidebar-menu-item active">
+                <i>📅</i> Rotas
+            </a>
+            <a href="{{ url_for('attendance_records') }}" class="sidebar-menu-item">
+                <i>⏰</i> Attendance
+            </a>
+            <a href="{{ url_for('reports') }}" class="sidebar-menu-item">
+                <i>📈</i> Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
         <div class="page-header" style="display: flex; align-items: center; gap: 20px;">
-            <a href="{{ url_for('manage_rotas') }}" style="text-decoration: none; font-size: 24px; color: var(--primary-blue);">←</a>
+            <a href="{{ url_for('manage_rotas') }}" style="text-decoration: none; font-size: 24px; color: var(--primary-color);">←</a>
             <h1>{{ employee.full_name }}'s Schedule</h1>
         </div>
 
@@ -101,5 +131,22 @@
             border-radius: 4px;
         }
     </style>
+
+    <script>
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = event.currentTarget;
+            menu.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(event) {
+            const userMenus = document.querySelectorAll('.user-menu');
+            userMenus.forEach(menu => {
+                if (!menu.contains(event.target)) {
+                    menu.classList.remove('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

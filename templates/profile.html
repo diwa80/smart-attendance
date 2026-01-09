@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - D Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="top-header-left">
+            <div class="top-header-logo">D Attendance</div>
+        </div>
+        <div class="top-header-right">
+            <div class="user-menu" onclick="toggleUserMenu(event)">
+                <div class="user-avatar">{{ current_user.full_name[0].upper() }}</div>
+                <span>{{ current_user.full_name }}</span>
+                <span style="margin-left: 5px;">▼</span>
+                <div class="user-dropdown">
+                    <a href="{{ url_for('profile') }}" class="user-dropdown-item">
+                        <span>👤</span>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="user-dropdown-item">
+                        <span>🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-menu">
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-menu-item">
+                    <i>📊</i> Dashboard
+                </a>
+                <a href="{{ url_for('manage_employees') }}" class="sidebar-menu-item">
+                    <i>👥</i> PIM
+                </a>
+                <a href="{{ url_for('manage_rotas') }}" class="sidebar-menu-item">
+                    <i>📅</i> Rotas
+                </a>
+                <a href="{{ url_for('attendance_records') }}" class="sidebar-menu-item">
+                    <i>⏰</i> Attendance
+                </a>
+                <a href="{{ url_for('reports') }}" class="sidebar-menu-item">
+                    <i>📈</i> Reports
+                </a>
+            {% else %}
+                <a href="{{ url_for('employee_dashboard') }}" class="sidebar-menu-item">
+                    <i>📊</i> Dashboard
+                </a>
+                <a href="{{ url_for('attendance_records') }}" class="sidebar-menu-item">
+                    <i>⏰</i> Attendance
+                </a>
+                <a href="{{ url_for('my_records') }}" class="sidebar-menu-item">
+                    <i>📋</i> My Records
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-header">
+            <h1>My Profile</h1>
+            <p class="text-muted">Manage your account information</p>
+        </div>
+
+        <div class="form-container">
+            <div class="card">
+                {% if success %}
+                <div class="alert alert-success">
+                    {{ success }}
+                </div>
+                {% endif %}
+
+                {% if error %}
+                <div class="alert alert-error">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('profile') }}" class="form">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px solid var(--border-color);">
+                            <div style="text-align: center;">
+                                <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: 700; margin: 0 auto 15px;">
+                                    {{ current_user.full_name[0].upper() }}
+                                </div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">{{ current_user.role | title }}</div>
+                            </div>
+                            <div>
+                                <div style="margin-bottom: 15px;">
+                                    <label style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Username</label>
+                                    <div style="font-size: 16px; margin-top: 5px;">{{ current_user.username }}</div>
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Member Since</label>
+                                    <div style="font-size: 16px; margin-top: 5px;">{{ current_user.created_at.strftime('%B %d, %Y') }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                            <div class="form-group">
+                                <label for="full_name">Full Name *</label>
+                                <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name" value="{{ user.full_name }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email *</label>
+                                <input type="email" id="email" name="email" required placeholder="Enter your email address" value="{{ user.email }}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password (leave blank to keep current)</label>
+                            <input type="password" id="password" name="password" placeholder="Enter new password if you want to change it">
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="{% if current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}{% else %}{{ url_for('employee_dashboard') }}{% endif %}" class="btn btn-outline">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = event.currentTarget;
+            menu.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(event) {
+            const userMenus = document.querySelectorAll('.user-menu');
+            userMenus.forEach(menu => {
+                if (!menu.contains(event.target)) {
+                    menu.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

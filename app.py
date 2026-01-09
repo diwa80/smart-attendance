@@ -1,19 +1,42 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from io import BytesIO
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Session Configuration - Sessions expire on server restart
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
+
+# Email Configuration
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', True)
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'your-email@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your-app-password')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@attendance.com')
+
+# Generate unique server instance ID on startup
+import uuid
+SERVER_INSTANCE_ID = str(uuid.uuid4())
+
 db = SQLAlchemy(app)
+mail = Mail(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -75,6 +98,18 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+# ===================== Request Handlers =====================
+@app.before_request
+def check_server_instance():
+    """Check if server was restarted - logout users if instance changed"""
+    if current_user.is_authenticated and request.endpoint != 'logout':
+        # Check if session has the current server instance ID
+        if 'server_instance_id' not in session or session.get('server_instance_id') != SERVER_INSTANCE_ID:
+            logout_user()
+            session.clear()
+            return redirect(url_for('login'))
+
+
 # ===================== Routes =====================
 @app.route('/')
 def index():
@@ -95,6 +130,8 @@ def login():
 
         if user and user.check_password(password) and user.is_active:
             login_user(user)
+            # Store server instance ID in session
+            session['server_instance_id'] = SERVER_INSTANCE_ID
             if user.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             else:
@@ -110,6 +147,39 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        full_name = request.form.get('full_name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        current_user.full_name = full_name
+        
+        # Only update email if it's changed and not already in use
+        if email != current_user.email:
+            if User.query.filter_by(email=email).first():
+                return render_template('profile.html', error='Email already in use', user=current_user)
+            current_user.email = email
+        
+        # Only update password if provided
+        password_changed = False
+        if password:
+            current_user.set_password(password)
+            password_changed = True
+        
+        db.session.commit()
+        
+        # Send password change notification
+        if password_changed:
+            send_password_change_email(current_user)
+        
+        return render_template('profile.html', success='Profile updated successfully', user=current_user)
+    
+    return render_template('profile.html', user=current_user)
 
 
 @app.route('/employee/dashboard')
@@ -192,10 +262,18 @@ def check_in():
     ).first()
 
     if existing:
-        if existing.check_in:
+        # Check if shift times have changed - if both check_in and check_out exist but shift times don't match
+        if existing.check_in and existing.check_out:
+            # Employee has completed a previous shift, but there's a new shift assigned
+            # Allow them to check in for the new shift by resetting the attendance
+            existing.check_in = now
+            existing.check_out = None
+            existing.status = 'present'
+        elif existing.check_in:
             return jsonify({'success': False, 'message': 'Already checked in today'})
-        existing.check_in = now
-        existing.status = 'present'
+        else:
+            existing.check_in = now
+            existing.status = 'present'
     else:
         attendance = Attendance(
             user_id=current_user.id,
@@ -331,6 +409,32 @@ def delete_employees_bulk():
     return redirect(url_for('manage_employees'))
 
 
+@app.route('/delete_employee/<int:employee_id>', methods=['POST'])
+@login_required
+def delete_employee(employee_id):
+    if current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    user = User.query.get(employee_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'Employee not found'}), 404
+    
+    # Prevent deleting admins or self
+    if user.role == 'admin':
+        return jsonify({'success': False, 'message': 'Cannot delete admin users'}), 403
+    
+    if user.id == current_user.id:
+        return jsonify({'success': False, 'message': 'Cannot delete yourself'}), 403
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Employee deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @app.route('/admin/employee/<int:employee_id>')
 @login_required
 def view_employee(employee_id):
@@ -350,7 +454,146 @@ def view_employee(employee_id):
     ).order_by(Attendance.date.desc()).all()
     
     return render_template('view_employee.html', employee=employee, records=records, month=month, year=year)
+# ===================== Helper Functions =====================
+def send_welcome_email(user, password):
+    """Send welcome email to newly created employee"""
+    try:
+        subject = f"Welcome to D Attendance System - Your Account Details"
+        html_body = f"""
+        <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }}
+                    .content {{ background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; border: 1px solid #ddd; }}
+                    .info-box {{ background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #667EEA; border-radius: 4px; }}
+                    .credentials {{ background: #e8f4f8; padding: 15px; border-radius: 4px; margin: 15px 0; }}
+                    .credentials p {{ margin: 8px 0; font-family: monospace; }}
+                    .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #999; }}
+                    .button {{ display: inline-block; background: #667EEA; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; margin: 15px 0; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Welcome to D Attendance System! 👋</h1>
+                    </div>
+                    <div class="content">
+                        <p>Hello <strong>{user.full_name}</strong>,</p>
+                        
+                        <p>Your employee account has been successfully created in the D Attendance System. Your administrator has provided you with the credentials below to get started.</p>
+                        
+                        <div class="info-box">
+                            <h3>🔐 Your Login Credentials</h3>
+                            <div class="credentials">
+                                <p><strong>Username:</strong> <code>{user.username}</code></p>
+                                <p><strong>Password:</strong> <code>{password}</code></p>
+                                <p><strong>Email:</strong> <code>{user.email}</code></p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-box">
+                            <h3>ℹ️ Important Information</h3>
+                            <ul>
+                                <li><strong>Change Your Password:</strong> Please change your password on first login by going to your Profile settings.</li>
+                                <li><strong>Keep Credentials Safe:</strong> Never share your login credentials with anyone.</li>
+                                <li><strong>System Features:</strong> You can check your attendance, view rotas, and submit records using this system.</li>
+                            </ul>
+                        </div>
+                        
+                        <p style="text-align: center; margin-top: 30px;">
+                            <a href="#" class="button">Login to System</a>
+                        </p>
+                        
+                        <p>If you have any questions or issues logging in, please contact your administrator.</p>
+                        
+                        <p>Best regards,<br><strong>D Attendance System</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated message. Please do not reply to this email.</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        
+        msg = Message(subject=subject, recipients=[user.email], html=html_body)
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print(f"Failed to send email to {user.email}: {str(e)}")
+        return False
 
+
+def send_password_change_email(user):
+    """Send notification email when password is changed"""
+    try:
+        subject = f"Password Changed - D Attendance System"
+        html_body = f"""
+        <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }}
+                    .content {{ background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; border: 1px solid #ddd; }}
+                    .info-box {{ background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #667EEA; border-radius: 4px; }}
+                    .alert-box {{ background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 4px; margin: 15px 0; }}
+                    .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #999; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Password Changed Successfully 🔐</h1>
+                    </div>
+                    <div class="content">
+                        <p>Hello <strong>{user.full_name}</strong>,</p>
+                        
+                        <p>This email confirms that your password for the D Attendance System has been successfully changed.</p>
+                        
+                        <div class="info-box">
+                            <h3>📋 Change Details</h3>
+                            <p><strong>Account:</strong> {user.username}</p>
+                            <p><strong>Email:</strong> {user.email}</p>
+                            <p><strong>Date & Time:</strong> {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
+                        </div>
+                        
+                        <div class="alert-box">
+                            <h3>⚠️ Didn't make this change?</h3>
+                            <p>If you did not request this password change, please contact your system administrator immediately to secure your account.</p>
+                        </div>
+                        
+                        <div class="info-box">
+                            <h3>💡 Security Tips</h3>
+                            <ul>
+                                <li>Use a strong, unique password</li>
+                                <li>Never share your password with anyone</li>
+                                <li>Change your password regularly</li>
+                                <li>Log out from shared computers</li>
+                            </ul>
+                        </div>
+                        
+                        <p>Best regards,<br><strong>D Attendance System</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated security notification. Please do not reply to this email.</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        
+        msg = Message(subject=subject, recipients=[user.email], html=html_body)
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print(f"Failed to send email to {user.email}: {str(e)}")
+        return False
+
+
+# ===================== Routes =====================
 
 @app.route('/admin/add-employee', methods=['GET', 'POST'])
 @login_required
@@ -358,30 +601,76 @@ def add_employee():
     if current_user.role != 'admin':
         return redirect(url_for('index'))
     
+    employee_id = request.args.get('id', type=int)
+    employee = None
+    
+    # If editing, fetch the employee
+    if employee_id:
+        employee = User.query.get_or_404(employee_id)
+        if employee.role == 'admin':
+            return redirect(url_for('manage_employees'))
+    
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         full_name = request.form.get('full_name')
         password = request.form.get('password')
         department = request.form.get('department')
+        is_active = request.form.get('is_active') == 'on'
 
-        if User.query.filter_by(username=username).first():
-            return render_template('add_employee.html', error='Username already exists')
+        if employee:
+            # Editing existing employee
+            # Check if username changed and if new username exists
+            if employee.username != username:
+                if User.query.filter_by(username=username).first():
+                    return render_template('add_employee.html', employee=employee, error='Username already exists')
+            
+            # Check if email changed and if new email exists
+            if employee.email != email:
+                if User.query.filter_by(email=email).first():
+                    return render_template('add_employee.html', employee=employee, error='Email already exists')
+            
+            employee.username = username
+            employee.email = email
+            employee.full_name = full_name
+            employee.department = department
+            employee.is_active = is_active
+            
+            # Only update password if provided
+            if password:
+                employee.set_password(password)
+                db.session.commit()
+                # Send password change notification
+                send_password_change_email(employee)
+            else:
+                db.session.commit()
+        else:
+            # Adding new employee
+            if User.query.filter_by(username=username).first():
+                return render_template('add_employee.html', error='Username already exists')
+            
+            if User.query.filter_by(email=email).first():
+                return render_template('add_employee.html', error='Email already exists')
 
-        user = User(
-            username=username,
-            email=email,
-            full_name=full_name,
-            department=department,
-            role='employee'
-        )
-        user.set_password(password)
-        db.session.add(user)
+            employee = User(
+                username=username,
+                email=email,
+                full_name=full_name,
+                department=department,
+                role='employee',
+                is_active=True
+            )
+            employee.set_password(password)
+            db.session.add(employee)
+            db.session.commit()
+            
+            # Send welcome email with credentials
+            send_welcome_email(employee, password)
+        
         db.session.commit()
-
         return redirect(url_for('manage_employees'))
 
-    return render_template('add_employee.html')
+    return render_template('add_employee.html', employee=employee)
 
 
 @app.route('/admin/rotas')
@@ -469,15 +758,22 @@ def attendance_records():
         return redirect(url_for('index'))
     
     page = request.args.get('page', 1, type=int)
-    date_filter = request.args.get('date', '', type=str)
+    date_from = request.args.get('date_from', '', type=str)
+    date_to = request.args.get('date_to', '', type=str)
     
     query = Attendance.query
-    if date_filter:
-        query = query.filter(Attendance.date == datetime.strptime(date_filter, '%Y-%m-%d').date())
+    
+    if date_from:
+        from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+        query = query.filter(Attendance.date >= from_date)
+    
+    if date_to:
+        to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+        query = query.filter(Attendance.date <= to_date)
     
     records = query.order_by(Attendance.date.desc(), Attendance.check_in.desc()).paginate(page=page, per_page=15)
     
-    return render_template('attendance_records.html', records=records, date_filter=date_filter)
+    return render_template('attendance_records.html', records=records, date_from=date_from, date_to=date_to)
 
 
 @app.route('/admin/reports')
@@ -529,6 +825,55 @@ def get_stats():
     }
     
     return jsonify(stats)
+
+
+@app.route('/api/admin/employee-hours-today')
+@login_required
+def get_employee_hours_today():
+    if current_user.role != 'admin':
+        return jsonify({'success': False}), 403
+    
+    today = datetime.utcnow().date()
+    
+    # Get all employees
+    employees = User.query.filter_by(role='employee', is_active=True).all()
+    
+    employee_hours = []
+    for emp in employees:
+        attendance = Attendance.query.filter_by(
+            user_id=emp.id,
+            date=today
+        ).first()
+        
+        hours_worked = "0h 0m"
+        status = "Not Checked In"
+        
+        if attendance:
+            if attendance.check_in and attendance.check_out:
+                time_diff = attendance.check_out - attendance.check_in
+                hours = int(time_diff.total_seconds() // 3600)
+                minutes = int((time_diff.total_seconds() % 3600) // 60)
+                hours_worked = f"{hours}h {minutes}m"
+                status = "Checked Out"
+            elif attendance.check_in:
+                # Calculate current hours if still checked in
+                now = datetime.utcnow()
+                time_diff = now - attendance.check_in
+                hours = int(time_diff.total_seconds() // 3600)
+                minutes = int((time_diff.total_seconds() % 3600) // 60)
+                hours_worked = f"{hours}h {minutes}m"
+                status = "Working"
+        
+        employee_hours.append({
+            'name': emp.full_name,
+            'hours': hours_worked,
+            'status': status
+        })
+    
+    # Sort by hours worked (descending)
+    employee_hours.sort(key=lambda x: x['hours'], reverse=True)
+    
+    return jsonify({'employees': employee_hours})
 
 
 # ===================== Excel Export Routes =====================

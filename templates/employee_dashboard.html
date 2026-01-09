@@ -3,24 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Dashboard - Attendance System</title>
+    <title>Dashboard - D Attendance</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="navbar">
-        <div class="nav-container" style="display: contents;">
-            <div class="nav-brand">
-                <h2>BlueSky HRM</h2>
-            </div>
-            <div class="nav-menu">
-                <a href="{{ url_for('employee_dashboard') }}" class="nav-link active">Dashboard</a>
-                <a href="{{ url_for('my_records') }}" class="nav-link">My Records</a>
-                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="top-header-left">
+            <div class="top-header-logo">D Attendance</div>
+        </div>
+        <div class="top-header-right">
+            <div class="user-menu" onclick="toggleUserMenu(event)">
+                <div class="user-avatar">{{ current_user.full_name[0].upper() }}</div>
+                <span>{{ current_user.full_name }}</span>
+                <span style="margin-left: 5px;">▼</span>
+                <div class="user-dropdown">
+                    <a href="{{ url_for('profile') }}" class="user-dropdown-item">
+                        <span>👤</span>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="user-dropdown-item">
+                        <span>🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-menu">
+            <a href="{{ url_for('employee_dashboard') }}" class="sidebar-menu-item active">
+                <i>📊</i> Dashboard
+            </a>
+            <a href="{{ url_for('my_records') }}" class="sidebar-menu-item">
+                <i>📋</i> My Records
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
         <div class="page-header">
             <h1>Welcome, {{ current_user.full_name }}</h1>
         </div>
@@ -33,7 +57,7 @@
                 </div>
                 <div class="card-body">
                     <div style="text-align: center; padding: 20px 0;">
-                        <div id="current-time" style="font-size: 40px; font-weight: 800; color: var(--primary-blue); margin-bottom: 20px;">00:00:00</div>
+                        <div id="current-time" style="font-size: 40px; font-weight: 800; color: var(--primary-color); margin-bottom: 20px;">00:00:00</div>
                         
                         <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                             <div style="flex: 1; padding: 10px; background: #f8f9fa; border-radius: 8px;">
@@ -51,7 +75,8 @@
                         {% elif not attendance.check_out %}
                             <button class="btn" style="width: 100%; padding: 15px; background: var(--danger); color: white;" onclick="checkOut()">Punch Out</button>
                         {% else %}
-                            <div style="padding: 15px; background: #e6fffa; color: #2c7a7b; border-radius: 8px; font-weight: 700;">Shift Completed ✓</div>
+                            <div style="padding: 15px; background: #e6fffa; color: #2c7a7b; border-radius: 8px; font-weight: 700; margin-bottom: 10px;">Shift Completed ✓</div>
+                            <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="checkIn()">Check In for New Shift</button>
                         {% endif %}
                     </div>
                 </div>
@@ -64,8 +89,8 @@
                 </div>
                 <div class="card-body">
                     {% if today_rota %}
-                        <div style="padding: 20px; background: #ebf8ff; border-radius: 12px; border-left: 4px solid var(--secondary-blue);">
-                            <div style="font-size: 14px; color: var(--primary-blue); font-weight: 700;">Shift Timing</div>
+                        <div style="padding: 20px; background: #F0F4FF; border-radius: 12px; border-left: 4px solid var(--primary-color);">
+                            <div style="font-size: 14px; color: var(--primary-color); font-weight: 700;">Shift Timing</div>
                             <div style="font-size: 24px; font-weight: 800; margin-top: 5px;">{{ today_rota.shift_start.strftime('%H:%M') }} - {{ today_rota.shift_end.strftime('%H:%M') }}</div>
                         </div>
                     {% else %}
@@ -77,6 +102,21 @@
     </div>
 
     <script>
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = event.currentTarget;
+            menu.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(event) {
+            const userMenus = document.querySelectorAll('.user-menu');
+            userMenus.forEach(menu => {
+                if (!menu.contains(event.target)) {
+                    menu.classList.remove('active');
+                }
+            });
+        });
+
         function updateTime() {
             const now = new Date();
             const timeString = now.toLocaleTimeString('en-US', { hour12: false });
