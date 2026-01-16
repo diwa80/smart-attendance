@@ -177,7 +177,17 @@ app.run(debug=True, host='127.0.0.1', port=5001)  # Change 5001 to any available
 ```
 
 ### Database errors
-To reset the database, delete `attendance.db` file and restart the app. A new database will be created automatically.
+To reset the database, either:
+- Delete the SQLite file (commonly located at `instance/attendance.db`) and restart the app; or
+- Use the built-in Flask CLI command to safely flush all tables while recreating the default admin:
+
+```powershell
+cd "Attendance system"
+$env:FLASK_APP = "app.py"
+python -m flask flush-db --force
+```
+
+This drops and recreates all tables, then ensures the default admin exists (`admin` / `admin123`).
 
 ### Import errors
 Make sure all dependencies are installed:

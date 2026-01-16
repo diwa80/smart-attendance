@@ -9,6 +9,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from io import BytesIO
 import os
 from dotenv import load_dotenv
+from flask.cli import with_appcontext
+import click
 
 # Load environment variables from .env file
 load_dotenv()
@@ -1258,23 +1260,50 @@ def get_absence_report(month, year):
         'month': month,
         'year': year
 }
+
+# ===================== Database Utilities =====================
+def create_default_admin():
+    """Create default admin user if it doesn't exist"""
+    if not User.query.filter_by(username='admin').first():
+        admin = User(
+            username='admin',
+            email='admin@attendance.com',
+            full_name='Administrator',
+            role='admin',
+            department='HR'
+        )
+        admin.set_password('admin123')
+        db.session.add(admin)
+        db.session.commit()
+
+
+@app.cli.command('flush-db')
+@click.option('--force', is_flag=True, help='Do not prompt for confirmation.')
+@click.option('--keep-admin/--no-keep-admin', default=True, help='Recreate default admin after flush.')
+@with_appcontext
+def flush_db_command(force: bool, keep_admin: bool):
+    """Permanently delete ALL data and recreate tables.
+    By default, recreates the default admin account (admin/admin123).
+    """
+    if not force:
+        if not click.confirm('This will permanently delete ALL data. Continue?'):
+            click.echo('Aborted.')
+            return
+
+    # Drop and recreate all tables
+    db.drop_all()
+    db.create_all()
+
+    if keep_admin:
+        create_default_admin()
+
+    click.echo('Database flushed successfully.')
+    click.echo(f"Users: {User.query.count()}, Attendance: {Attendance.query.count()}, Rotas: {Rota.query.count()}")
 def init_db():
     with app.app_context():
         db.create_all()
-        
-        # Create default admin if it doesn't exist
-        if not User.query.filter_by(username='admin').first():
-            admin = User(
-                username='admin',
-                email='admin@attendance.com',
-                full_name='Administrator',
-                role='admin',
-                department='HR'
-            )
-            admin.set_password('admin123')
-            db.session.add(admin)
-            db.session.commit()
-            print("Admin user created with username: admin, password: admin123")
+        create_default_admin()
+        print("Ensured default admin exists (admin/admin123)")
 
 
 if __name__ == '__main__':
